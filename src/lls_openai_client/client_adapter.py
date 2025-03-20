@@ -11,9 +11,24 @@ from llama_stack_client.types.shared_params.sampling_params import (
     SamplingParams,
     StrategyTopPSamplingStrategy,
 )
+from openai.types.chat.chat_completion import ChatCompletion as OpenAIChatCompletion
+from openai.types.chat.chat_completion import Choice as OpenAIChatCompletionChoice
+from openai.types.chat.chat_completion_message import (
+    ChatCompletionMessage as OpenAIChatCompletionMessage,
+)
 from openai.types.completion import Completion as OpenAICompletion
 from openai.types.completion_choice import CompletionChoice as OpenAICompletionChoice
 import httpx
+
+_STOP_REASON_MAP = {
+    "end_of_turn": "stop",
+    "end_of_message": "stop",
+    "out_of_tokens": "length",
+}
+
+
+def _map_stop_reason(lls_stop_reason: str) -> str:
+    return _STOP_REASON_MAP.get(lls_stop_reason, "")
 
 
 class Completions:
@@ -21,8 +36,8 @@ class Completions:
         self.lls_client = llama_stack_client
 
     def create(self, *_args, **kwargs):
-        model_id = kwargs["model"]
-        prompts = kwargs["prompt"]
+        model_id = kwargs.get("model", None)
+        prompts = kwargs.get("prompt", None)
 
         # TODO: This is a pretty hacky way to do batch completions -
         # basically just de-batches them...
@@ -64,13 +79,6 @@ class Completions:
                 json_schema=schema,
             )
 
-        # TODO: pull into separate function, ensure all stop reasons
-        # are handled - this dict may not cover all cases
-        stop_reason_map = {
-            "end_of_turn": "stop",
-            "end_of_message": "stop",
-            "out_of_tokens": "length",
-        }
         choices = []
         # "n" is the number of completions to generate per prompt
         for i in range(0, n):
@@ -102,7 +110,7 @@ class Completions:
                     # the fact we have 2 loops here
                     index=i,
                     text=text,
-                    finish_reason=stop_reason_map[lls_result.stop_reason],
+                    finish_reason=_map_stop_reason(lls_result.stop_reason),
                 )
                 choices.append(choice)
         # TODO: a real id value, or maybe just a uuid?
@@ -119,16 +127,46 @@ class ChatCompletions:
     def __init__(self, llama_stack_client):
         self.lls_client = llama_stack_client
 
-    def create(self, *args, **kwargs):
-        # TODO: This obviously needs to get filled out and logic
-        # deduplicated with the regular completions where possible
-        print(f"!!! calling completions.create with {args} and {kwargs}")
-        return OpenAICompletion(
+    def create(self, *_args, **kwargs):
+        model_id = kwargs.get("model", None)
+        messages = kwargs.get("messages", None)
+        n = kwargs.get("n", 1)
+        sampling_params = SamplingParams()
+        response_format = None
+
+        choices = []
+        # "n" is the number of completions to generate per prompt
+        for i in range(0, n):
+            lls_result = self.lls_client.inference.chat_completion(
+                model_id=model_id,
+                messages=messages,
+                sampling_params=sampling_params,
+                response_format=response_format,
+            )
+
+            completion_message = lls_result.completion_message
+            message = OpenAIChatCompletionMessage(
+                role=completion_message.role,
+                content=completion_message.content or "",
+                tool_calls=completion_message.tool_calls,
+            )
+
+            choice = OpenAIChatCompletionChoice(
+                # TODO: "i" is the wrong index, but doesn't seem
+                # to matter right now so fix later to account for
+                # the fact we have 2 loops here
+                index=i,
+                message=message,
+                finish_reason=_map_stop_reason(completion_message.stop_reason),
+            )
+            choices.append(choice)
+
+        return OpenAIChatCompletion(
             id="foo",
-            choices=[],
+            choices=choices,
             created=0,
             model="foo",
-            object="text_completion",
+            object="chat.completion",
         )
 
 
