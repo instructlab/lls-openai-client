@@ -34,7 +34,7 @@ case $1 in
         run ruff format --diff .
         exitcode=$(( exitcode + $? ))
 
-        run isort --check --diff .
+        run isort --check --diff --skip-gitignore .
         exitcode=$(( exitcode + $? ))
         set -e
 
