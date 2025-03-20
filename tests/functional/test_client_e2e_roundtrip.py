@@ -145,6 +145,7 @@ def test_batch_prompts(client, model_id, mock_openai_completion):
     # 2 prompts * n of 3 == 6 expected completions
     assert len(call_args) == 6
 
+
 @pytest.mark.xfail(
     reason="bug in remote::vllm provider apply Llama ChatFormat to completions",
     strict=True,
@@ -163,21 +164,21 @@ def test_completion_prompt_unchanged(client, model_id, mock_openai_completion):
     assert call_kwargs["prompt"] == prompt
 
 
-def test_guided_decoding_valid_json_response(client, model_id, mock_completion_response):
+def test_guided_decoding_valid_json_response(
+    client, model_id, mock_completion_response
+):
     args = []
     kwargs = {
         "model": model_id,
         "prompt": "foo bar",
-        "extra_body": {
-            "guided_choice": ["joy", "sadness"]
-        },
+        "extra_body": {"guided_choice": ["joy", "sadness"]},
     }
     with patch(
         "openai.resources.completions.AsyncCompletions.create", new_callable=AsyncMock
     ) as mock_openai_completion:
         mock_completion_response.return_value = CompletionResponse(
             stop_reason="end_of_message",
-            content="[\"joy\"]",
+            content='["joy"]',
         )
         response = client.completions.create(*args, **kwargs)
         mock_openai_completion.assert_called()
@@ -197,9 +198,7 @@ def test_guided_decoding_uses_guided_choice(client, model_id, mock_completion_re
     kwargs = {
         "model": model_id,
         "prompt": "foo bar",
-        "extra_body": {
-            "guided_choice": guided_choices
-        },
+        "extra_body": {"guided_choice": guided_choices},
     }
     with patch(
         "openai.resources.completions.AsyncCompletions.create", new_callable=AsyncMock
@@ -218,14 +217,14 @@ def test_guided_decoding_uses_guided_choice(client, model_id, mock_completion_re
         assert response.choices[0].text == "joy"
 
 
-def test_guided_decoding_invalid_json_response(client, model_id, mock_completion_response):
+def test_guided_decoding_invalid_json_response(
+    client, model_id, mock_completion_response
+):
     args = []
     kwargs = {
         "model": model_id,
         "prompt": "foo bar",
-        "extra_body": {
-            "guided_choice": ["joy", "sadness"]
-        },
+        "extra_body": {"guided_choice": ["joy", "sadness"]},
     }
     with patch(
         "openai.resources.completions.AsyncCompletions.create", new_callable=AsyncMock

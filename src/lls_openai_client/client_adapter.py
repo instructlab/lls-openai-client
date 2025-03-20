@@ -20,7 +20,7 @@ class Completions:
     def __init__(self, llama_stack_client):
         self.lls_client = llama_stack_client
 
-    def create(self, *args, **kwargs):
+    def create(self, *_args, **kwargs):
         model_id = kwargs["model"]
         prompts = kwargs["prompt"]
 
@@ -144,7 +144,7 @@ class Models:
     def __init__(self, llama_stack_client):
         self.lls_client = llama_stack_client
 
-    def list(self, *args, **kwargs):
+    def list(self, *_args, **_kwargs):
         # TODO: this needs to convert response values from Llama Stack
         # to OpenAI format
         return self.lls_client.models.list()
@@ -154,7 +154,7 @@ class OpenAIClientAdapter:
     completions: Completions
     chat: Chat
 
-    def __init__(self, llama_stack_client):
+    def __init__(self, llama_stack_client: LlamaStackClient):
         self.lls_client = llama_stack_client
         if not self.lls_client:
             raise ValueError("A `llama_stack_client` must be provided.")
