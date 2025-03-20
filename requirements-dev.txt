@@ -2,6 +2,14 @@
 
 -r requirements.txt
 
+# Needed by Llama Stack remote vLLM distribution
+aiosqlite
+datasets
+opentelemetry-exporter-otlp-proto-http
+opentelemetry-sdk
+
+llama_stack>=0.1.7
+
 pylint>=2.16.2,<4.0
 pylint-pydantic
 pytest

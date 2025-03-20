@@ -86,13 +86,15 @@ class Completions:
                     response_format=response_format,
                 )
 
+                text = lls_result.content
                 if guided_choice:
-                    # TODO: error handling - this is very naive
-                    # parsing, assuming we always get well-formed JSON
-                    # response with at least one element
-                    text = json.loads(lls_result.content)[0]
-                else:
-                    text = lls_result.content
+                    try:
+                        json_results = json.loads(lls_result.content)
+                        if json_results and isinstance(json_results, list):
+                            text = json_results[0]
+                    except json.decoder.JSONDecodeError:
+                        # invalid JSON, so just leave the text as the raw content
+                        pass
 
                 choice = OpenAICompletionChoice(
                     # TODO: "i" is the wrong index, but doesn't seem

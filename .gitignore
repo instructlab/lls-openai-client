@@ -1,3 +1,6 @@
+# Auto generated
+src/lls_openai_client/_version.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
