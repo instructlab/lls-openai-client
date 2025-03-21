@@ -5,7 +5,7 @@ import uuid
 
 # Third Party
 from llama_stack_client import LlamaStackClient
-from llama_stack_client.types.inference_chat_completion_params import Tool
+from llama_stack_client.types.inference_chat_completion_params import Tool, ToolConfig
 from llama_stack_client.types.shared_params.response_format import (
     JsonSchemaResponseFormat,
 )
@@ -70,6 +70,16 @@ def _parse_sampling_params(params):
     sampling_params["strategy"] = top_p_sampling_strategy
 
     return sampling_params
+
+
+def _parse_tool_config(params):
+    tool_config = None
+    tool_choice = params.get("tool_choice", None)
+    if tool_choice:
+        tool_config = ToolConfig(
+            tool_choice=tool_choice,
+        )
+    return tool_config
 
 
 def _parse_tools(params):
@@ -170,6 +180,7 @@ class ChatCompletions:
         n = kwargs.get("n", 1)
         response_format = _parse_response_format(kwargs)
         sampling_params = _parse_sampling_params(kwargs)
+        tool_config = _parse_tool_config(kwargs)
         tools = _parse_tools(kwargs)
 
         choices = []
@@ -180,6 +191,7 @@ class ChatCompletions:
                 messages=messages,
                 sampling_params=sampling_params,
                 response_format=response_format,
+                tool_config=tool_config,
                 tools=tools,
             )
 

@@ -251,6 +251,58 @@ def id_tracker():
                 "top_p": 1.0,
             },
         ),
+        pytest.param(
+            {
+                "model": "foo",
+                "messages": [{"role": "user", "content": "user prompt"}],
+                "tool_choice": "auto",
+                "tools": [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "user function",
+                        },
+                    }
+                ],
+            },
+            {
+                "model": "foo",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "user prompt",
+                            }
+                        ],
+                    }
+                ],
+                "max_tokens": 4096,
+                "stream": False,
+                "temperature": 1.0,
+                "tool_choice": "auto",
+                "tools": [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "user function",
+                            "description": None,
+                            "parameters": {
+                                "properties": {},
+                                "required": [],
+                                "type": "object",
+                            },
+                        },
+                    }
+                ],
+                "top_p": 1.0,
+            },
+            marks=pytest.mark.xfail(
+                reason="bug in remote:vllm provider: does not pass tool_choice",
+                strict=True,
+            ),
+        ),
         (
             {
                 "model": "foo",

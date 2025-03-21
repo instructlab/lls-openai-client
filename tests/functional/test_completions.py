@@ -63,7 +63,7 @@ def test_completion_ids(client, model_id, mock_openai_completion):
 
 
 @pytest.mark.xfail(
-    reason="bug in remote::vllm provider apply Llama ChatFormat to completions",
+    reason="bug in remote::vllm provider: applies Llama ChatFormat to completions",
     strict=True,
 )
 def test_completion_prompt_unchanged(client, model_id, mock_openai_completion):
