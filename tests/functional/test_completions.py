@@ -79,7 +79,7 @@ def test_guided_decoding_valid_json_response(
     ) as mock_openai_completion:
         mock_completion_response.return_value = CompletionResponse(
             stop_reason="end_of_message",
-            content='["joy"]',
+            content="joy",
         )
         response = client.completions.create(*args, **kwargs)
         mock_openai_completion.assert_called()

@@ -42,10 +42,8 @@ def _parse_response_format(params):
     if guided_choice:
         pattern_choices = "|".join(guided_choice)
         schema = {
-            "type": "array",
-            "minItems": 1,
-            "maxItems": 1,
-            "items": {"type": "string", "pattern": f"^({pattern_choices})$"},
+            "type": "string",
+            "pattern": f"^({pattern_choices})$",
         }
         response_format = JsonSchemaResponseFormat(
             type="json_schema",
@@ -119,9 +117,6 @@ class Completions:
         response_format = _parse_response_format(kwargs)
         sampling_params = _parse_sampling_params(kwargs)
 
-        extra_body = kwargs.get("extra_body", {})
-        guided_choice = extra_body.get("guided_choice", [])
-
         choices = []
         # "n" is the number of completions to generate per prompt
         for i in range(0, n):
@@ -138,11 +133,9 @@ class Completions:
                 )
 
                 text = lls_result.content
-                if guided_choice:
+                if response_format and response_format.get("json_schema", None):
                     try:
-                        json_results = json.loads(lls_result.content)
-                        if json_results and isinstance(json_results, list):
-                            text = json_results[0]
+                        text = json.loads(lls_result.content)
                     except json.decoder.JSONDecodeError:
                         # invalid JSON, so just leave the text as the raw content
                         pass
