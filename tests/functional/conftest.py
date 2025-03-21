@@ -52,15 +52,7 @@ datasets: []
 scoring_fns: []
 sdg_fns: []
 benchmarks: []
-tool_groups:
-- toolgroup_id: builtin::websearch
-  provider_id: tavily-search
-- toolgroup_id: builtin::rag
-  provider_id: rag-runtime
-- toolgroup_id: builtin::code_interpreter
-  provider_id: code-interpreter
-- toolgroup_id: builtin::wolfram_alpha
-  provider_id: wolfram-alpha
+tool_groups: []
 server:
   port: 8321
 """
