@@ -36,6 +36,13 @@ def mock_httpx_send(model_id):
         yield mock_send
 
 
+# list scoped to the entire module so we can track ids seen across
+# responses
+@pytest.fixture(scope="module")
+def id_tracker():
+    return []
+
+
 @pytest.mark.parametrize(
     "create_params,expected_request_json",
     [
@@ -311,16 +318,23 @@ def test_chat_completion_requests_non_streaming(
     client,
     model_id,
     mock_httpx_send,
+    id_tracker,
     create_params,
     expected_request_json,
 ):
-    client.chat.completions.create(**create_params)
+    response = client.chat.completions.create(**create_params)
+
     mock_httpx_send.assert_called()
     send_calls = mock_httpx_send.call_args_list
     num_expected_calls = create_params.get("n", 1)
     assert len(send_calls) == num_expected_calls
+
     for send_call in send_calls:
         request = send_call.args[0]
         assert isinstance(request, httpx.Request)
         request_json = json.loads(request.content)
         assert request_json == expected_request_json
+
+    # ensure each response has a unique id
+    assert response.id not in id_tracker
+    id_tracker.append(response.id)

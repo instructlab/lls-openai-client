@@ -1,6 +1,7 @@
 # Standard
 import json
 import time
+import uuid
 
 # Third Party
 from llama_stack_client import LlamaStackClient
@@ -119,7 +120,7 @@ class Completions:
 
         choices = []
         # "n" is the number of completions to generate per prompt
-        for i in range(0, n):
+        for _i in range(0, n):
             # and we may have multiple prompts, if batching was used
 
             # TODO: see if this can get wired up to LlamaStack's batch
@@ -144,14 +145,14 @@ class Completions:
                     # TODO: "i" is the wrong index, but doesn't seem
                     # to matter right now so fix later to account for
                     # the fact we have 2 loops here
-                    index=i,
+                    index=len(choices),
                     text=text,
                     finish_reason=_map_stop_reason(lls_result.stop_reason),
                 )
                 choices.append(choice)
-        # TODO: a real id value, or maybe just a uuid?
+
         return OpenAICompletion(
-            id="foo",
+            id=f"cmpl-{uuid.uuid4()}",
             choices=choices,
             created=int(time.time()),
             model=model_id,
@@ -196,9 +197,8 @@ class ChatCompletions:
             )
             choices.append(choice)
 
-        # TODO: a real id value, or maybe just a uuid?
         return OpenAIChatCompletion(
-            id="foo",
+            id=f"chatcmpl-{uuid.uuid4()}",
             choices=choices,
             created=int(time.time()),
             model=model_id,

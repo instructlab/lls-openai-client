@@ -38,13 +38,28 @@ def test_batch_prompts(client, model_id, mock_openai_completion):
         "max_tokens": 1,
         "n": 3,
     }
-    client.completions.create(*args, **kwargs)
+    response = client.completions.create(*args, **kwargs)
     mock_openai_completion.assert_called()
     call_args = mock_openai_completion.call_args_list
     assert call_args[0].kwargs["model"] == model_id
     assert call_args[0].kwargs["max_tokens"] == 1
     # 2 prompts * n of 3 == 6 expected completions
     assert len(call_args) == 6
+    # ensure we get expected indices for our choices
+    for i, choice in enumerate(response.choices):
+        assert choice.index == i
+
+
+def test_completion_ids(client, model_id, mock_openai_completion):
+    kwargs = {
+        "model": model_id,
+        "prompt": ["test1", "test2"],
+        "max_tokens": 1,
+        "n": 3,
+    }
+    response1 = client.completions.create(**kwargs)
+    response2 = client.completions.create(**kwargs)
+    assert response1.id != response2.id
 
 
 @pytest.mark.xfail(
