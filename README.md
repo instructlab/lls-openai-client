@@ -1,19 +1,18 @@
 # Llama Stack OpenAI Client
 
-This library has two pieces - an OpenAI client that delegates all
-calls to Llama Stack APIs and an OpenAI proxy server that delegates
-all incoming requests to Llama Stack APIs.
+This library is an OpenAI client adapter allows you to create an
+object that looks and acts like a Python OpenAI client. But, under the
+hood, it delegates all inference calls to the LlamaStack API.
 
-## OpenAI client
+## Example Usage
 
-The OpenAI client adapter allows you to create an object that looks
-and acts like a Python OpenAI client. But, under the hood, it
-delegates all inference calls to the LlamaStack API.
-
-### Usage
+In this example, we'll use `LlamaStackAsLibraryClient` to run Llama
+Stack in library mode. Note that the client works equally well with
+`LlamaStackClient` instances if you're pointing to a remote Llama
+Stack server.
 
 Install Llama Stack Server and the remote-vllm distribution's
-dependent libraries:
+dependent libraries (only if using `LlamaStackAsLibraryClient`):
 
 ```
 pip install llama-stack aiosqlite autoevals datasets faiss-cpu mcp \
@@ -27,7 +26,7 @@ pip install git+https://github.com/bbrowning/llama-stack-openai-client
 ```
 
 Set the VLLM_URL and INFERENCE_MODEL environment variables as required
-when using LlamaStack as a library client with the remote-vllm
+when using `LlamaStackAsLibraryClient` with the remote-vllm
 provider. These should point towards your running vLLM server and the
 model deployed in it.
 
@@ -62,8 +61,6 @@ response = client.completions.create(
 
 print(f"\nResponse:\n{response.choices[0].text}")
 ```
-
-## OpenAI proxy server
 
 ## Development
 
