@@ -376,6 +376,85 @@ def id_tracker():
                 "top_p": 1.0,
             },
         ),
+        pytest.param(
+            {
+                "model": MOCK_MODEL_ID,
+                "messages": [
+                    {"role": "user", "content": "user prompt"},
+                    {"role": "tool", "tool_call_id": "call_abc123", "content": "success"},
+                ],
+                "tools": [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "foo_bar",
+                            "description": "my user function",
+                            "parameters": {
+                                "properties": {
+                                    "param1": {
+                                        "type": "string",
+                                        "description": "a string",
+                                    },
+                                },
+                                "required": ["param1"],
+                                "type": "object",
+                            },
+                        },
+                    }
+                ],
+            },
+            {
+                "model": MOCK_MODEL_ID,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "user prompt",
+                            }
+                        ],
+                    },
+                    {
+                        "role": "tool",
+                        "tool_call_id": "call_abc123",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "success",
+                            }
+                        ],
+                    },
+                ],
+                "max_tokens": 4096,
+                "stream": False,
+                "temperature": 1.0,
+                "tools": [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "foo_bar",
+                            "description": "my user function",
+                            "parameters": {
+                                "properties": {
+                                    "param1": {
+                                        "type": "string",
+                                        "description": "a string",
+                                    },
+                                },
+                                "required": ["param1"],
+                                "type": "object",
+                            },
+                        },
+                    }
+                ],
+                "top_p": 1.0,
+            },
+            marks=pytest.mark.xfail(
+                reason="bug in remote:vllm provider: does not pass tool_call_id",
+                strict=True,
+            ),
+        ),
     ],
 )
 def test_chat_completion_requests_non_streaming(

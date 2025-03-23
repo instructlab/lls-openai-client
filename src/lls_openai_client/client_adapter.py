@@ -42,6 +42,20 @@ def _map_stop_reason(lls_stop_reason: str) -> str:
     return _STOP_REASON_MAP.get(lls_stop_reason, "")
 
 
+def _convert_request_messages(messages):
+    # Llama Stack messages and OpenAI messages are similar, but not
+    # identical. Specifically, Llama Stack expects `call_id` but
+    # OpenAi uses `tool_call_id`
+    lls_messages = []
+    for message in messages:
+        lls_message = message.copy()
+        tool_call_id = lls_message.pop("tool_call_id", None)
+        if tool_call_id:
+            lls_message["call_id"] = tool_call_id
+        lls_messages.append(lls_message)
+    return lls_messages
+
+
 def _parse_request_response_format(params):
     response_format = None
     extra_body = params.get("extra_body", {})
@@ -196,7 +210,7 @@ class ChatCompletions:
 
     def create(self, *_args, **kwargs):
         model_id = kwargs.get("model", None)
-        messages = kwargs.get("messages", None)
+        messages = _convert_request_messages(kwargs.get("messages", None))
         n = kwargs.get("n", 1)
         response_format = _parse_request_response_format(kwargs)
         sampling_params = _parse_request_sampling_params(kwargs)
