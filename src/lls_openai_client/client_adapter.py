@@ -175,9 +175,6 @@ class Completions:
                         pass
 
                 choice = OpenAICompletionChoice(
-                    # TODO: "i" is the wrong index, but doesn't seem
-                    # to matter right now so fix later to account for
-                    # the fact we have 2 loops here
                     index=len(choices),
                     text=text,
                     finish_reason=_map_stop_reason(lls_result.stop_reason),
