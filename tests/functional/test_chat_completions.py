@@ -10,27 +10,18 @@ import json
 import httpx
 import pytest
 
+# Local
+from .conftest import MOCK_MODEL_ID
+
 
 @pytest.fixture
-def mock_httpx_send(model_id):
+def mock_httpx_send(vllm_response):
     with patch("httpx.AsyncClient.send") as mock_send:
         request = MagicMock()
         request.headers = {}
         mock_send.return_value = httpx.Response(
             status_code=200,
-            json={
-                "choices": [
-                    {
-                        "finish_reason": "stop",
-                        "index": 0,
-                        "message": {
-                            "role": "assistant",
-                            "content": "mock response",
-                        },
-                    }
-                ],
-                "model": model_id,
-            },
+            json=vllm_response,
             request=request,
         )
         yield mock_send
@@ -44,16 +35,16 @@ def id_tracker():
 
 
 @pytest.mark.parametrize(
-    "create_params,expected_request_json",
+    "client_request,vllm_request,vllm_response,client_response",
     [
         (
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [{"role": "user", "content": "user prompt"}],
-                "n": 5,
+                "n": 3,
             },
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [
                     {
                         "role": "user",
@@ -71,10 +62,55 @@ def id_tracker():
                 "tools": None,
                 "top_p": 1.0,
             },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {
+                            "role": "assistant",
+                            "content": "mock response",
+                            "tool_calls": [],
+                        },
+                    },
+                ],
+            },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "mock response",
+                            "tool_calls": [],
+                        },
+                    },
+                    {
+                        "finish_reason": "stop",
+                        "index": 1,
+                        "message": {
+                            "role": "assistant",
+                            "content": "mock response",
+                            "tool_calls": [],
+                        },
+                    },
+                    {
+                        "finish_reason": "stop",
+                        "index": 2,
+                        "message": {
+                            "role": "assistant",
+                            "content": "mock response",
+                            "tool_calls": [],
+                        },
+                    },
+                ],
+            },
         ),
         (
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [
                     {
                         "role": "system",
@@ -84,7 +120,7 @@ def id_tracker():
                 ],
             },
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [
                     {
                         "role": "system",
@@ -111,10 +147,37 @@ def id_tracker():
                 "tools": None,
                 "top_p": 1.0,
             },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {
+                            "role": "assistant",
+                            "content": "What can I assist you with today?",
+                            "tool_calls": [],
+                        },
+                    },
+                ],
+            },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "What can I assist you with today?",
+                            "tool_calls": [],
+                        },
+                    },
+                ],
+            },
         ),
         (
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [
                     {
                         "role": "user",
@@ -123,7 +186,7 @@ def id_tracker():
                 ],
             },
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [
                     {
                         "role": "user",
@@ -141,21 +204,48 @@ def id_tracker():
                 "tools": None,
                 "top_p": 1.0,
             },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {
+                            "role": "assistant",
+                            "content": "What can I assist you with today?",
+                            "tool_calls": [],
+                        },
+                    },
+                ],
+            },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "What can I assist you with today?",
+                            "tool_calls": [],
+                        },
+                    },
+                ],
+            },
         ),
         (
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [
                     {
                         "role": "user",
                         "content": [{"type": "text", "text": "user prompt"}],
                     }
                 ],
-                "max_tokens": 8192,
+                "max_tokens": 4,
                 "temperature": 0.5,
             },
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [
                     {
                         "role": "user",
@@ -167,16 +257,43 @@ def id_tracker():
                         ],
                     }
                 ],
-                "max_tokens": 8192,
+                "max_tokens": 4,
                 "stream": False,
                 "temperature": 0.5,
                 "tools": None,
                 "top_p": 1.0,
             },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "length",
+                        "message": {
+                            "role": "assistant",
+                            "content": "You could provide more",
+                            "tool_calls": [],
+                        },
+                    },
+                ],
+            },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "length",
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "You could provide more",
+                            "tool_calls": [],
+                        },
+                    },
+                ],
+            },
         ),
         (
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [
                     {
                         "role": "user",
@@ -186,7 +303,7 @@ def id_tracker():
                 "top_p": 0.8,
             },
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [
                     {
                         "role": "user",
@@ -204,29 +321,58 @@ def id_tracker():
                 "tools": None,
                 "top_p": 0.8,
             },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {
+                            "role": "assistant",
+                            "content": "What can I assist you with today?",
+                            "tool_calls": [],
+                        },
+                    },
+                ],
+            },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "What can I assist you with today?",
+                            "tool_calls": [],
+                        },
+                    },
+                ],
+            },
         ),
         (
             {
-                "model": "foo",
-                "messages": [{"role": "user", "content": "user prompt"}],
+                "model": MOCK_MODEL_ID,
+                "messages": [
+                    {"role": "user", "content": "Call the get_price function"}
+                ],
                 "tools": [
                     {
                         "type": "function",
                         "function": {
-                            "name": "user function",
+                            "name": "get_price",
                         },
                     }
                 ],
             },
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [
                     {
                         "role": "user",
                         "content": [
                             {
                                 "type": "text",
-                                "text": "user prompt",
+                                "text": "Call the get_price function",
                             }
                         ],
                     }
@@ -238,7 +384,7 @@ def id_tracker():
                     {
                         "type": "function",
                         "function": {
-                            "name": "user function",
+                            "name": "get_price",
                             "description": None,
                             "parameters": {
                                 "properties": {},
@@ -249,31 +395,78 @@ def id_tracker():
                     }
                 ],
                 "top_p": 1.0,
+            },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "tool_calls",
+                        "message": {
+                            "role": "assistant",
+                            "content": "",
+                            "tool_calls": [
+                                {
+                                    "id": "call_abc123",
+                                    "type": "function",
+                                    "function": {
+                                        "name": "get_price",
+                                        "arguments": "{}",
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "tool_calls",
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "",
+                            "tool_calls": [
+                                {
+                                    "id": "call_abc123",
+                                    "type": "function",
+                                    "function": {
+                                        "name": "get_price",
+                                        "arguments": "{}",
+                                    },
+                                }
+                            ],
+                        },
+                    },
+                ],
             },
         ),
         pytest.param(
             {
-                "model": "foo",
-                "messages": [{"role": "user", "content": "user prompt"}],
+                "model": MOCK_MODEL_ID,
+                "messages": [
+                    {"role": "user", "content": "Call the get_price function"}
+                ],
                 "tool_choice": "auto",
                 "tools": [
                     {
                         "type": "function",
                         "function": {
-                            "name": "user function",
+                            "name": "get_price",
                         },
                     }
                 ],
             },
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [
                     {
                         "role": "user",
                         "content": [
                             {
                                 "type": "text",
-                                "text": "user prompt",
+                                "text": "Call the get_price function",
                             }
                         ],
                     }
@@ -286,7 +479,7 @@ def id_tracker():
                     {
                         "type": "function",
                         "function": {
-                            "name": "user function",
+                            "name": "get_price",
                             "description": None,
                             "parameters": {
                                 "properties": {},
@@ -297,6 +490,51 @@ def id_tracker():
                     }
                 ],
                 "top_p": 1.0,
+            },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "tool_calls",
+                        "message": {
+                            "role": "assistant",
+                            "content": "",
+                            "tool_calls": [
+                                {
+                                    "id": "call_abc123",
+                                    "type": "function",
+                                    "function": {
+                                        "name": "get_price",
+                                        "arguments": "{}",
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "tool_calls",
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "",
+                            "tool_calls": [
+                                {
+                                    "id": "call_abc123",
+                                    "type": "function",
+                                    "function": {
+                                        "name": "get_price",
+                                        "arguments": "{}",
+                                    },
+                                }
+                            ],
+                        },
+                    },
+                ],
             },
             marks=pytest.mark.xfail(
                 reason="bug in remote:vllm provider: does not pass tool_choice",
@@ -305,13 +543,13 @@ def id_tracker():
         ),
         (
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [{"role": "user", "content": "user prompt"}],
                 "tools": [
                     {
                         "type": "function",
                         "function": {
-                            "name": "user function",
+                            "name": "foo_bar",
                             "description": "my user function",
                             "parameters": {
                                 "properties": {
@@ -327,7 +565,7 @@ def id_tracker():
                 ],
             },
             {
-                "model": "foo",
+                "model": MOCK_MODEL_ID,
                 "messages": [
                     {
                         "role": "user",
@@ -346,7 +584,7 @@ def id_tracker():
                     {
                         "type": "function",
                         "function": {
-                            "name": "user function",
+                            "name": "foo_bar",
                             "description": "my user function",
                             "parameters": {
                                 "properties": {
@@ -363,30 +601,98 @@ def id_tracker():
                 ],
                 "top_p": 1.0,
             },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "tool_calls",
+                        "message": {
+                            "role": "assistant",
+                            "content": "",
+                            "tool_calls": [
+                                {
+                                    "id": "call_abc123",
+                                    "type": "function",
+                                    "function": {
+                                        "name": "foo_bar",
+                                        "arguments": '{"param1":"baz"}',
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+            {
+                "model": MOCK_MODEL_ID,
+                "choices": [
+                    {
+                        "finish_reason": "tool_calls",
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "",
+                            "tool_calls": [
+                                {
+                                    "id": "call_abc123",
+                                    "type": "function",
+                                    "function": {
+                                        "name": "foo_bar",
+                                        "arguments": '{"param1":"baz"}',
+                                    },
+                                }
+                            ],
+                        },
+                    },
+                ],
+            },
         ),
     ],
 )
-def test_chat_completion_requests_non_streaming(
+def test_chat_completion_non_streaming(
     client,
-    model_id,
+    mock_model_id,
     mock_httpx_send,
     id_tracker,
-    create_params,
-    expected_request_json,
+    client_request,
+    vllm_request,
+    vllm_response,
+    client_response,
 ):
-    response = client.chat.completions.create(**create_params)
+    num_expected_calls = client_request.get("n", 1)
+    response = client.chat.completions.create(**client_request)
 
+    # Verify we sent the expected number of requests to vLLM
     mock_httpx_send.assert_called()
     send_calls = mock_httpx_send.call_args_list
-    num_expected_calls = create_params.get("n", 1)
     assert len(send_calls) == num_expected_calls
 
     for send_call in send_calls:
+        # Verify each request to vLLM matches the expected json
         request = send_call.args[0]
         assert isinstance(request, httpx.Request)
         request_json = json.loads(request.content)
-        assert request_json == expected_request_json
+        assert request_json == vllm_request
 
     # ensure each response has a unique id
+    assert response.id
     assert response.id not in id_tracker
     id_tracker.append(response.id)
+
+    # Verify basic response attributes
+    assert response.model == client_response["model"]
+    assert response.created > 0
+    assert response.object == "chat.completion"
+
+    # Verify we generated the expected number of choices in the client
+    response_choices = response.choices
+    assert len(response_choices) == num_expected_calls
+
+    for i, response_choice in enumerate(response_choices):
+        # Assert indexes appear in the right order
+        assert response_choice.index == i
+
+        # Assert each response choice matches our expected json
+        response_json = response_choice.model_dump(exclude_unset=True)
+        expected_json = client_response["choices"][i]
+        assert response_json == expected_json

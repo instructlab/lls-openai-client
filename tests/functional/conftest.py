@@ -18,7 +18,10 @@ from lls_openai_client.client_adapter import OpenAIClientAdapter
 # Common fixtures and testing utilities
 #
 
-RUN_YAML = """version: '2'
+MOCK_MODEL_ID = "foo"
+
+RUN_YAML = (
+    """version: '2'
 image_name: remote-vllm
 apis:
 - inference
@@ -43,7 +46,9 @@ metadata_store:
   db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/registry.db
 models:
 - metadata: {}
-  model_id: foo
+  model_id: """
+    + MOCK_MODEL_ID
+    + """
   provider_id: vllm-inference
   model_type: llm
 shields: []
@@ -56,11 +61,12 @@ tool_groups: []
 server:
   port: 8321
 """
+)
 
 
 @pytest.fixture
-def model_id():
-    return "foo"
+def mock_model_id():
+    return MOCK_MODEL_ID
 
 
 @pytest.fixture
@@ -72,14 +78,14 @@ def mock_openai_models_list():
 
 
 @pytest.fixture
-def lls_client(tmp_path, mock_openai_models_list, model_id):
+def lls_client(tmp_path, mock_openai_models_list, mock_model_id):
     run_yaml_path = str(tmp_path / "run.yaml")
     with open(run_yaml_path, "w", encoding="utf-8") as f:
         f.write(RUN_YAML)
     client = LlamaStackAsLibraryClient(run_yaml_path)
 
     async def mock_openai_models():
-        yield OpenAIModel(id=model_id, created=1, object="model", owned_by="test")
+        yield OpenAIModel(id=mock_model_id, created=1, object="model", owned_by="test")
 
     mock_openai_models_list.return_value = mock_openai_models()
 

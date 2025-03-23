@@ -21,13 +21,19 @@ from openai.types.chat.chat_completion import Choice as OpenAIChatCompletionChoi
 from openai.types.chat.chat_completion_message import (
     ChatCompletionMessage as OpenAIChatCompletionMessage,
 )
+from openai.types.chat.chat_completion_message_tool_call import (
+    ChatCompletionMessageToolCall as OpenAIChatCompletionMessageToolCall,
+)
+from openai.types.chat.chat_completion_message_tool_call import (
+    Function as OpenAIChatCompletionFunction,
+)
 from openai.types.completion import Completion as OpenAICompletion
 from openai.types.completion_choice import CompletionChoice as OpenAICompletionChoice
 import httpx
 
 _STOP_REASON_MAP = {
+    "end_of_message": "tool_calls",
     "end_of_turn": "stop",
-    "end_of_message": "stop",
     "out_of_tokens": "length",
 }
 
@@ -36,7 +42,7 @@ def _map_stop_reason(lls_stop_reason: str) -> str:
     return _STOP_REASON_MAP.get(lls_stop_reason, "")
 
 
-def _parse_response_format(params):
+def _parse_request_response_format(params):
     response_format = None
     extra_body = params.get("extra_body", {})
     guided_choice = extra_body.get("guided_choice", [])
@@ -53,7 +59,7 @@ def _parse_response_format(params):
     return response_format
 
 
-def _parse_sampling_params(params):
+def _parse_request_sampling_params(params):
     sampling_params = SamplingParams()
 
     max_tokens = params.get("max_tokens", None)
@@ -72,7 +78,7 @@ def _parse_sampling_params(params):
     return sampling_params
 
 
-def _parse_tool_config(params):
+def _parse_request_tool_config(params):
     tool_config = None
     tool_choice = params.get("tool_choice", None)
     if tool_choice:
@@ -82,7 +88,7 @@ def _parse_tool_config(params):
     return tool_config
 
 
-def _parse_tools(params):
+def _parse_request_tools(params):
     tools = params.get("tools", None)
     lls_tools = []
     if tools and isinstance(tools, list):
@@ -111,6 +117,23 @@ def _parse_tools(params):
     return lls_tools
 
 
+def _parse_response_tool_calls(completion_message):
+    tool_calls = []
+    for tool_call in completion_message.tool_calls:
+        function = OpenAIChatCompletionFunction(
+            arguments=tool_call.arguments_json,
+            name=tool_call.tool_name,
+        )
+        tool_calls.append(
+            OpenAIChatCompletionMessageToolCall(
+                id=tool_call.call_id,
+                function=function,
+                type="function",
+            )
+        )
+    return tool_calls
+
+
 class Completions:
     def __init__(self, llama_stack_client):
         self.lls_client = llama_stack_client
@@ -125,8 +148,8 @@ class Completions:
         if not isinstance(prompts, list):
             prompts = [prompts]
 
-        response_format = _parse_response_format(kwargs)
-        sampling_params = _parse_sampling_params(kwargs)
+        response_format = _parse_request_response_format(kwargs)
+        sampling_params = _parse_request_sampling_params(kwargs)
 
         choices = []
         # "n" is the number of completions to generate per prompt
@@ -178,10 +201,10 @@ class ChatCompletions:
         model_id = kwargs.get("model", None)
         messages = kwargs.get("messages", None)
         n = kwargs.get("n", 1)
-        response_format = _parse_response_format(kwargs)
-        sampling_params = _parse_sampling_params(kwargs)
-        tool_config = _parse_tool_config(kwargs)
-        tools = _parse_tools(kwargs)
+        response_format = _parse_request_response_format(kwargs)
+        sampling_params = _parse_request_sampling_params(kwargs)
+        tool_config = _parse_request_tool_config(kwargs)
+        tools = _parse_request_tools(kwargs)
 
         choices = []
         # "n" is the number of completions to generate per prompt
@@ -196,10 +219,11 @@ class ChatCompletions:
             )
 
             completion_message = lls_result.completion_message
+            tool_calls = _parse_response_tool_calls(completion_message)
             message = OpenAIChatCompletionMessage(
                 role=completion_message.role,
                 content=completion_message.content or "",
-                tool_calls=completion_message.tool_calls,
+                tool_calls=tool_calls,
             )
 
             choice = OpenAIChatCompletionChoice(
