@@ -381,7 +381,11 @@ def id_tracker():
                 "model": MOCK_MODEL_ID,
                 "messages": [
                     {"role": "user", "content": "user prompt"},
-                    {"role": "tool", "tool_call_id": "call_abc123", "content": "success"},
+                    {
+                        "role": "tool",
+                        "tool_call_id": "call_abc123",
+                        "content": "success",
+                    },
                 ],
                 "tools": [
                     {
