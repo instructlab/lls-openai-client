@@ -11,6 +11,7 @@ from llama_stack_client.types.shared_params.response_format import (
 )
 from llama_stack_client.types.shared_params.sampling_params import (
     SamplingParams,
+    StrategyGreedySamplingStrategy,
     StrategyTopPSamplingStrategy,
 )
 from llama_stack_client.types.shared_params.tool_param_definition import (
@@ -81,13 +82,16 @@ def _parse_request_sampling_params(params):
         sampling_params["max_tokens"] = max_tokens
 
     temperature = params.get("temperature", 1.0)
-    top_p = params.get("top_p", 1.0)
-    top_p_sampling_strategy = StrategyTopPSamplingStrategy(
-        type="top_p",
-        temperature=temperature,
-        top_p=top_p,
-    )
-    sampling_params["strategy"] = top_p_sampling_strategy
+    if temperature == 0:
+        strategy = StrategyGreedySamplingStrategy(type="greedy")
+    else:
+        top_p = params.get("top_p", 1.0)
+        strategy = StrategyTopPSamplingStrategy(
+            type="top_p",
+            temperature=temperature,
+            top_p=top_p,
+        )
+    sampling_params["strategy"] = strategy
 
     return sampling_params
 
@@ -283,6 +287,9 @@ class OpenAIClientAdapter:
         self.completions = Completions(self.lls_client)
         self.chat = Chat(self.lls_client)
         self.models = Models(self.lls_client)
+
+        # Specifically disable batching when used by instructlab-sdg
+        self.server_supports_batched = False
 
     @property
     def base_url(self) -> httpx.URL:

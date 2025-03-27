@@ -157,3 +157,15 @@ def test_guided_decoding_invalid_json_response(
         assert call_kwargs["extra_body"]
         assert response.choices
         assert response.choices[0].text == "something that is not valid json"
+
+
+def test_temperature_0(client, mock_model_id, mock_openai_completion):
+    kwargs = {
+        "model": mock_model_id,
+        "prompt": "foo bar",
+        "temperature": 0,
+    }
+    client.completions.create(**kwargs)
+    mock_openai_completion.assert_called()
+    call_kwargs = mock_openai_completion.call_args.kwargs
+    assert call_kwargs["temperature"] == 0
