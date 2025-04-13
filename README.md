@@ -1,5 +1,7 @@
 # Llama Stack OpenAI Client
 
+**Note:** With Llama Stack gaining native OpenAI APIs for completion and chat completions, this repository will likely soon be archived. Better performance and compatibility can be had by just pointing your OpenAI clients to Llama Stack's `/v1/openai/v1` endpoint.
+
 This library is an OpenAI client adapter allows you to create an
 object that looks and acts like a Python OpenAI client. But, under the
 hood, it delegates all inference calls to the LlamaStack API.
