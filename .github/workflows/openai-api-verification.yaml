@@ -83,7 +83,7 @@ jobs:
 
       - name: Run servers
         run: |
-          uv run vllm serve ${INFERENCE_MODEL} --port 8000 --enable-auto-tool-choice --tool-call-parser llama3_json --max-model-len 32000
+          uv run vllm serve "${INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama3_json --max-model-len 32000
           uv run llama stack run --image-type venv --port 8321 remote-vllm &
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -99,7 +99,6 @@ jobs:
         run: |
           source .venv/bin/activate
           python -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py
-        env: {}
 
   stop-ec2-runner:
     needs:
