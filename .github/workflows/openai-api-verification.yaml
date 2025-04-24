@@ -4,6 +4,8 @@ name: OpenAI API Verification
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "21 01 * * *"
 
 env:
   LC_ALL: en_US.UTF-8
