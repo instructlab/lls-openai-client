@@ -178,7 +178,7 @@ jobs:
           cp artifacts/*.json openai-api-verification/latest/
           cp artifacts/*.json "openai-api-verification/${TODAY}/"
 
-      - name: Push new reports
+      - name: Push new results
         run: |
           git config --global user.name "Ben Browning"
           git config --global user.email "bbrownin@redhat.com"
