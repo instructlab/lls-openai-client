@@ -8,6 +8,7 @@ on:
 env:
   LC_ALL: en_US.UTF-8
   TMPDIR: /home/tmp
+  INFERENCE_MODEL: RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic
 
 defaults:
   run:
@@ -97,7 +98,6 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           VLLM_URL: "http://localhost:8000/v1"
-          INFERENCE_MODEL: "meta-llama/Llama-3.2-3B-Instruct"
 
       - name: Run verification tests
         run: |
@@ -106,11 +106,11 @@ jobs:
           base_url: http://localhost:8321/v1/openai/v1
           api_key_var: OPENAI_API_KEY
           models:
-          - meta-llama/Llama-3.2-3B-Instruct
+          - ${INFERENCE_MODEL}
           model_display_names:
-            meta-llama/Llama-3.2-3B-Instruct: Llama-3.2-3B-Instruct
+            ${INFERENCE_MODEL}: ${INFERENCE_MODEL}
           test_exclusions:
-            meta-llama/Llama-3.2-3B-Instruct:
+            ${INFERENCE_MODEL}:
             - test_chat_non_streaming_image
             - test_chat_streaming_image
             - test_response_non_streaming_image
