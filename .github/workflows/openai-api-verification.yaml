@@ -173,9 +173,9 @@ jobs:
           export TODAY="$(date -Idate)"
           ls -l artifacts/
           mkdir -p openai-api-verification/latest
-          mkdir -p openai-api-verification/${TODAY}
+          mkdir -p "openai-api-verification/${TODAY}"
           cp artifacts/*.json openai-api-verification/latest/
-          cp artifacts/*.json openai-api-verification/${TODAY}/
+          cp artifacts/*.json "openai-api-verification/${TODAY}/"
 
       - name: Push new reports
         run: |
