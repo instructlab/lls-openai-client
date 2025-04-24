@@ -99,6 +99,7 @@ jobs:
           curl --retry-connrefused --retry 5 --retry-delay 3 http://localhost:8321/v1/openai/v1/models
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          INFERENCE_MODEL: ${{ env.VLLM_INFERENCE_MODEL }}
           VLLM_URL: "http://localhost:8000/v1"
 
       - name: Run vllm verification tests
@@ -119,9 +120,9 @@ jobs:
             - test_chat_multi_turn_multiple_images
           EOF
 
-          export INFERENCE_MODEL="${VLLM_INFERENCE_MODEL}"
           python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=vllm-llama-stack --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/vllm-llama-stack.json"
         env:
+          INFERENCE_MODEL: ${{ env.VLLM_INFERENCE_MODEL }}
           OPENAI_API_KEY: fake
 
       - name: Upload test artifacts
