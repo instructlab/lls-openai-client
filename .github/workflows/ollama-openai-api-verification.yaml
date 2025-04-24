@@ -5,7 +5,7 @@ name: ollama OpenAI API Verification
 on:
   workflow_dispatch:
   schedule:
-    - cron: "21 01 * * *"
+    - cron: "21 11 * * *"
 
 env:
   LC_ALL: en_US.UTF-8
