@@ -37,7 +37,7 @@ jobs:
           mode: start
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           ec2-image-id: ${{ vars.AWS_EC2_AMI }}
-          ec2-instance-type: g4dn.2xlarge
+          ec2-instance-type: g6.8xlarge
           subnet-id: subnet-02d230cffd9385bd4
           security-group-id: sg-06300447c4a5fbef3
           iam-role-name: instructlab-ci-runner
@@ -90,7 +90,7 @@ jobs:
       - name: Run servers
         run: |
           source .venv/bin/activate
-          python3.11 -m vllm.entrypoints.openai.api_server --model "${INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama3_json --max-model-len 32000 &
+          python3.11 -m vllm.entrypoints.openai.api_server --model "${INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama3_json --max-model-len 48000 &
           curl --retry-connrefused --retry 50 --retry-delay 30 "${VLLM_URL}/models"
           uv run llama stack run --image-type venv --port 8321 remote-vllm &
           curl --retry-connrefused --retry 5 --retry-delay 3 http://localhost:8321/v1/openai/v1/models
