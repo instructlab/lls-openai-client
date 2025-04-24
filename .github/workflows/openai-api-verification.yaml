@@ -102,7 +102,21 @@ jobs:
       - name: Run verification tests
         run: |
           source .venv/bin/activate
-          python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py
+          cat <<-EOF > tests/verifications/conf/vllm-llama-stack.yaml
+          base_url: http://localhost:8321/v1/openai/v1
+          api_key_var: OPENAI_API_KEY
+          models:
+          - meta-llama/Llama-3.2-3B-Instruct
+          model_display_names:
+            meta-llama/Llama-3.2-3B-Instruct: Llama-3.2-3B-Instruct
+          test_exclusions:
+            meta-llama/Llama-3.2-3B-Instruct:
+            - test_chat_non_streaming_image
+            - test_chat_streaming_image
+            - test_response_non_streaming_image
+            - test_response_non_streaming_multi_turn_image
+          EOF
+          python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=vllm-llama-stack
 
   stop-ec2-runner:
     needs:
