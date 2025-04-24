@@ -1,6 +1,6 @@
 # spdx-license-identifier: Apache-2.0
 
-name: OpenAI API Verification
+name: vLLM OpenAI API Verification
 
 on:
   workflow_dispatch:
