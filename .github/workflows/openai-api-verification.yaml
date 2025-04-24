@@ -106,6 +106,20 @@ jobs:
         run: |
           source .venv/bin/activate
 
+          cat <<-EOF > tests/verifications/conf/vllm.yaml
+          base_url: http://localhost:8000/v1
+          api_key_var: OPENAI_API_KEY
+          models:
+          - ${VLLM_INFERENCE_MODEL}
+          model_display_names:
+            ${VLLM_INFERENCE_MODEL}: ${VLLM_INFERENCE_MODEL}
+          test_exclusions:
+            ${VLLM_INFERENCE_MODEL}:
+            - test_chat_non_streaming_image
+            - test_chat_streaming_image
+            - test_chat_multi_turn_multiple_images
+          EOF
+
           cat <<-EOF > tests/verifications/conf/vllm-llama-stack.yaml
           base_url: http://localhost:8321/v1/openai/v1
           api_key_var: OPENAI_API_KEY
@@ -120,7 +134,9 @@ jobs:
             - test_chat_multi_turn_multiple_images
           EOF
 
-          python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=vllm-llama-stack --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/vllm-llama-stack.json" || echo "some verification tests failed"
+          python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=vllm --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/vllm.json" || echo "some vllm verification tests failed"
+
+          python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=vllm-llama-stack --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/vllm-llama-stack.json" || echo "some vllm-llama-stack verification tests failed"
         env:
           INFERENCE_MODEL: ${{ env.VLLM_INFERENCE_MODEL }}
           OPENAI_API_KEY: fake
