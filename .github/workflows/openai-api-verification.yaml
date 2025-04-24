@@ -77,21 +77,21 @@ jobs:
           python3.11 -m pip install uv
           uv sync --extra dev
           source .venv/bin/activate
-          pip install -e .
-          pip install pytest-json-report
-          pip install vllm
+          uv pip install -e .
+          uv pip install pytest-json-report
 
-          # vllm wants a newer huggingface-hub but uv doesn't install it
-          pip install "huggingface-hub>=0.30.0"
+          # newer huggingface-hub and vllm directly via pip (vs uv)
+          python3.11 -m pip install "huggingface-hub>=0.30.0"
+          python3.11 -m pip install vllm
 
-          llama stack build --template remote-vllm --image-type venv
+          uv run llama stack build --template remote-vllm --image-type venv
 
       - name: Run servers
         run: |
           source .venv/bin/activate
-          vllm serve "${INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama3_json --max-model-len 32000 &
+          python3.11 -m vllm.entrypoints.openai.api_server --model "${INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama3_json --max-model-len 32000 &
           curl --retry-connrefused --retry 50 --retry-delay 30 "${VLLM_URL}/models"
-          llama stack run --image-type venv --port 8321 remote-vllm &
+          uv run llama stack run --image-type venv --port 8321 remote-vllm &
           curl --retry-connrefused --retry 5 --retry-delay 3 http://localhost:8321/v1/openai/v1/models
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
