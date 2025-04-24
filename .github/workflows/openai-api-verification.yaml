@@ -8,7 +8,7 @@ on:
 env:
   LC_ALL: en_US.UTF-8
   TMPDIR: /home/tmp
-  INFERENCE_MODEL: RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic
+  INFERENCE_MODEL: RedHatAI/Llama-3.3-70B-Instruct-quantized.w4a16
 
 defaults:
   run:
