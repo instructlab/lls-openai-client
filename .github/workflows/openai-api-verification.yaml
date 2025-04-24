@@ -121,6 +121,7 @@ jobs:
 
           python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=vllm-llama-stack --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/vllm-llama-stack.json"
         env:
+          INFERENCE_MODEL: ${{ env.VLLM_INFERENCE_MODEL }}
           OPENAI_API_KEY: fake
 
       - name: Upload test artifacts
