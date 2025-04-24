@@ -79,6 +79,10 @@ jobs:
           uv pip install -e .
           uv pip install pytest-json-report
           uv pip install vllm
+
+          # vllm wants a newer huggingface-hub but uv doesn't install it
+          uv pip install "huggingface-hub>=0.30.0"
+
           uv run llama stack build --template remote-vllm --image-type venv
 
       - name: Run servers
