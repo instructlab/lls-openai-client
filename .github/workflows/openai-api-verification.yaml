@@ -170,7 +170,8 @@ jobs:
 
       - name: Add the new verification results
         run: |
-          export TODAY="$(date -Idate)"
+          TODAY="$(date -Idate)"
+          export TODAY
           ls -l artifacts/
           mkdir -p openai-api-verification/latest
           mkdir -p "openai-api-verification/${TODAY}"
