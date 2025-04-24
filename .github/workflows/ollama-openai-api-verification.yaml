@@ -93,7 +93,7 @@ jobs:
       - name: Run servers
         run: |
           source .venv/bin/activate
-          ollama run "${INFERENCE_MODEL} &
+          ollama run "${INFERENCE_MODEL}" &
           curl --retry-connrefused --retry 50 --retry-delay 30 "http://localhost:11434/v1/models"
           uv run llama stack run --image-type venv --port 8321 ollama &
           curl --retry-connrefused --retry 5 --retry-delay 3 http://localhost:8321/v1/openai/v1/models
