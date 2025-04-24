@@ -98,6 +98,7 @@ jobs:
           uv run llama stack run --image-type venv --port 8321 ollama &
           curl --retry-connrefused --retry 5 --retry-delay 3 http://localhost:8321/v1/openai/v1/models
         env:
+          HOME: ${{ env.TMPDIR }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
       - name: Run ollama verification tests
