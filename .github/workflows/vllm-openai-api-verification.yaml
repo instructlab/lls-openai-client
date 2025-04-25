@@ -131,11 +131,11 @@ jobs:
 
           # Start vLLM and wait for it to come up
           # TODO: this needs llama4_json tool call parser once that gets into a vllm release
-          python3.11 -m vllm.entrypoints.openai.api_server --model "${VLLM_INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama3_json --chat-template tool_chat_template_llama4_json.jinja --gpu-memory-utilization 0.99 --enforce-eager --max-model-len 16000 --tensor-parallel-size 4 &
+          python3.11 -m vllm.entrypoints.openai.api_server --model "${VLLM_INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama3_json --chat-template tool_chat_template_llama4_json.jinja --gpu-memory-utilization 0.99 --enforce-eager --max-model-len 32000 --tensor-parallel-size 4 2>&1 | tee vllm.log &
           curl --retry-connrefused --retry 50 --retry-delay 30 "${VLLM_URL}/models"
 
           # Start Llama Stack and wait for it to come up
-          uv run llama stack run --image-type venv --port 8321 remote-vllm &
+          uv run llama stack run --image-type venv --port 8321 remote-vllm 2>&1 | tee llama_stack.log &
           curl --retry-connrefused --retry 5 --retry-delay 3 http://localhost:8321/v1/openai/v1/models
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -173,6 +173,9 @@ jobs:
             - test_chat_streaming_image
             - test_chat_multi_turn_multiple_images
           EOF
+
+          tail -f vllm.log &
+          tail -f llama_stack.log &
 
           python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=vllm --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/vllm.json" || echo "some vllm verification tests failed"
 
