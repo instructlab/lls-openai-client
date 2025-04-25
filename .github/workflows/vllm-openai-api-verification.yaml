@@ -95,7 +95,7 @@ jobs:
       - name: Run servers
         run: |
           source .venv/bin/activate
-          python3.11 -m vllm.entrypoints.openai.api_server --model "${VLLM_INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama3_json --gpu-memory-utilization 0.99 --enforce-eager --max-model-len 16000 --guided-decoding-backend outlines &
+          python3.11 -m vllm.entrypoints.openai.api_server --model "${VLLM_INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama3_json --gpu-memory-utilization 0.99 --enforce-eager --max-model-len 11500 --guided-decoding-backend outlines &
           curl --retry-connrefused --retry 50 --retry-delay 30 "${VLLM_URL}/models"
           uv run llama stack run --image-type venv --port 8321 remote-vllm &
           curl --retry-connrefused --retry 5 --retry-delay 3 http://localhost:8321/v1/openai/v1/models
