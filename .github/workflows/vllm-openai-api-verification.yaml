@@ -130,7 +130,7 @@ jobs:
           curl https://raw.githubusercontent.com/vllm-project/vllm/d5615af9aee97ef44f46de722d48852eb5d40802/examples/tool_chat_template_llama4_json.jinja -o tool_chat_template_llama4_json.jinja
 
           # Start vLLM and wait for it to come up
-          python3.11 -m vllm.entrypoints.openai.api_server --model "${VLLM_INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama4_json --chat-template tool_chat_template_llama4_json.jinja --gpu-memory-utilization 0.99 --enforce-eager --max-model-len 16000 &
+          python3.11 -m vllm.entrypoints.openai.api_server --model "${VLLM_INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama4_json --chat-template tool_chat_template_llama4_json.jinja --gpu-memory-utilization 0.99 --enforce-eager --max-model-len 16000 --tensor-parallel-size 4 &
           curl --retry-connrefused --retry 50 --retry-delay 30 "${VLLM_URL}/models"
 
           # Start Llama Stack and wait for it to come up
