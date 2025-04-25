@@ -96,6 +96,7 @@ jobs:
           ollama serve &
           curl --retry-connrefused --retry 10 --retry-delay 5 "http://localhost:11434/v1/models"
           ollama run "${INFERENCE_MODEL}" --keepalive 60m &
+          # shellcheck disable=SC2016
           timeout 600 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:11434/v1/models/${INFERENCE_MODEL})" != "200" ]]; do sleep 5; done' || false
           uv run llama stack run --image-type venv --port 8321 ollama &
           curl --retry-connrefused --retry 15 --retry-delay 5 http://localhost:8321/v1/openai/v1/models
