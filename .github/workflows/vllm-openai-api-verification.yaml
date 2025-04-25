@@ -11,7 +11,7 @@ env:
   LC_ALL: en_US.UTF-8
   TMPDIR: /home/tmp
   VERIFICATION_RESULTS_DIR: /home/tmp/test_results
-  VLLM_INFERENCE_MODEL: RedHatAI/Llama-3.3-70B-Instruct-quantized.w4a16
+  VLLM_INFERENCE_MODEL: RedHatAI/Llama-4-Scout-17B-16E-Instruct-FP8-dynamic
 
 defaults:
   run:
@@ -41,7 +41,7 @@ jobs:
           mode: start
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           ec2-image-id: ${{ vars.AWS_EC2_AMI }}
-          ec2-instance-type: g6e.8xlarge
+          ec2-instance-type: g6e.12xlarge
           subnet-id: subnet-02d230cffd9385bd4
           security-group-id: sg-06300447c4a5fbef3
           iam-role-name: instructlab-ci-runner
@@ -88,15 +88,22 @@ jobs:
 
           # newer huggingface-hub and vllm directly via pip (vs uv)
           python3.11 -m pip install "huggingface-hub>=0.30.0"
-          python3.11 -m pip install vllm
+          python3.11 -m pip install "vllm>=0.8.4"
 
           uv run llama stack build --template remote-vllm --image-type venv
 
       - name: Run servers
         run: |
           source .venv/bin/activate
-          python3.11 -m vllm.entrypoints.openai.api_server --model "${VLLM_INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama3_json --gpu-memory-utilization 0.99 --enforce-eager --max-model-len 16000 &
+
+          # Download latest Llama 4 chat template from vLLM
+          curl https://raw.githubusercontent.com/vllm-project/vllm/d5615af9aee97ef44f46de722d48852eb5d40802/examples/tool_chat_template_llama4_json.jinja -o tool_chat_template_llama4_json.jinja
+
+          # Start vLLM and wait for it to come up
+          python3.11 -m vllm.entrypoints.openai.api_server --model "${VLLM_INFERENCE_MODEL}" --port 8000 --enable-auto-tool-choice --tool-call-parser llama4_json --chat-template tool_chat_template_llama4_json.jinja --gpu-memory-utilization 0.99 --enforce-eager --max-model-len 16000 &
           curl --retry-connrefused --retry 50 --retry-delay 30 "${VLLM_URL}/models"
+
+          # Start Llama Stack and wait for it to come up
           uv run llama stack run --image-type venv --port 8321 remote-vllm &
           curl --retry-connrefused --retry 5 --retry-delay 3 http://localhost:8321/v1/openai/v1/models
         env:
