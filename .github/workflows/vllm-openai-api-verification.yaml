@@ -4,6 +4,12 @@ name: vLLM OpenAI API Verification
 
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish test results?"
+        required: true
+        default: false
+        type: boolean
   schedule:
     - cron: "21 01 * * *"
 
@@ -153,11 +159,6 @@ jobs:
           - ${VLLM_INFERENCE_MODEL}
           model_display_names:
             ${VLLM_INFERENCE_MODEL}: ${VLLM_INFERENCE_MODEL}
-          test_exclusions:
-            ${VLLM_INFERENCE_MODEL}:
-            - test_chat_non_streaming_image
-            - test_chat_streaming_image
-            - test_chat_multi_turn_multiple_images
           EOF
 
           cat <<-EOF > tests/verifications/conf/vllm-llama-stack.yaml
@@ -167,18 +168,17 @@ jobs:
           - ${VLLM_INFERENCE_MODEL}
           model_display_names:
             ${VLLM_INFERENCE_MODEL}: ${VLLM_INFERENCE_MODEL}
-          test_exclusions:
-            ${VLLM_INFERENCE_MODEL}:
-            - test_chat_non_streaming_image
-            - test_chat_streaming_image
-            - test_chat_multi_turn_multiple_images
           EOF
 
           tail -f vllm.log &
           tail -f llama_stack.log &
 
-          python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=vllm --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/vllm.json" || echo "some vllm verification tests failed"
+          # OpenAI Respopnses API
+          python3.11 -m pytest -s -v tests/verifications/openai_api/test_responses.py --provider=vllm || echo "some vllm responses verification tests failed"
+          python3.11 -m pytest -s -v tests/verifications/openai_api/test_responses.py --provider=vllm-llama-stack || echo "some vllm-llama-stack responses verification tests failed"
 
+          # OpenAI Chat Completions API
+          python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=vllm --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/vllm.json" || echo "some vllm verification tests failed"
           python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=vllm-llama-stack --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/vllm-llama-stack.json" || echo "some vllm-llama-stack verification tests failed"
         env:
           INFERENCE_MODEL: ${{ env.VLLM_INFERENCE_MODEL }}
@@ -186,6 +186,7 @@ jobs:
 
       - name: Upload test artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ github.event_name == "schedule" || inputs.publish)
         with:
           name: openai-api-verification-results
           path: ${{ env.VERIFICATION_RESULTS_DIR }}
@@ -193,6 +194,7 @@ jobs:
   publish-results:
     name: publish-results
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == "schedule" || inputs.publish)
     needs: verification
     permissions:
       # allow pushing to the github repo
