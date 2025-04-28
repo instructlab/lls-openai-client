@@ -186,7 +186,7 @@ jobs:
 
       - name: Upload test artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: ${{ github.event_name == "schedule" || inputs.publish) }}
+        if: ${{ github.event_name == 'schedule' || inputs.publish) }}
         with:
           name: openai-api-verification-results
           path: ${{ env.VERIFICATION_RESULTS_DIR }}
@@ -194,7 +194,7 @@ jobs:
   publish-results:
     name: publish-results
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == "schedule" || inputs.publish) }}
+    if: ${{ github.event_name == 'schedule' || inputs.publish) }}
     needs: verification
     permissions:
       # allow pushing to the github repo
