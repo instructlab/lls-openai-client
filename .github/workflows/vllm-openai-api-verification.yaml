@@ -146,6 +146,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           INFERENCE_MODEL: ${{ env.VLLM_INFERENCE_MODEL }}
+          TAVILY_SEARCH_API_KEY: ${{ secrets.TAVILY_SEARCH_API_KEY }}
           VLLM_URL: "http://localhost:8000/v1"
 
       - name: Run vllm verification tests
@@ -173,8 +174,7 @@ jobs:
           tail -f vllm.log &
           tail -f llama_stack.log &
 
-          # OpenAI Respopnses API
-          python3.11 -m pytest -s -v tests/verifications/openai_api/test_responses.py --provider=vllm || echo "some vllm responses verification tests failed"
+          # OpenAI Responses API
           python3.11 -m pytest -s -v tests/verifications/openai_api/test_responses.py --provider=vllm-llama-stack || echo "some vllm-llama-stack responses verification tests failed"
 
           # OpenAI Chat Completions API
