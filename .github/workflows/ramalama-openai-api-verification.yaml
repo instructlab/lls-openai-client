@@ -102,7 +102,7 @@ jobs:
           source .venv/bin/activate
 
           ramalama pull "${INFERENCE_MODEL}"
-          ramalama serve "${INFERENCE_MODEL}" 2>&1 | tee ramalama.log &
+          ramalama serve --runtime-args="--alias ${INFERENCE_MODEL}" "${INFERENCE_MODEL}" 2>&1 | tee ramalama.log &
           # shellcheck disable=SC2016
           timeout 600 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:8080/v1/models/${INFERENCE_MODEL})" != "200" ]]; do sleep 5; done' || false
 
