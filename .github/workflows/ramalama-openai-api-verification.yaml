@@ -95,12 +95,12 @@ jobs:
           uv pip install -e .
           uv pip install pytest-json-report
           
-          uv pip install ramalama==0.7.5
+          uv pip install ramalama
 
       - name: Run servers
         run: |
           source .venv/bin/activate
-          ramalama serve "${INFERENCE_MODEL}" > ramalama.log 2>&1 &
+          ramalama serve "${INFERENCE_MODEL}" 2>&1 | tee ramalama.log &
           # shellcheck disable=SC2016
           timeout 600 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:8080/v1/models/${INFERENCE_MODEL})" != "200" ]]; do sleep 5; done' || false
           cd ramalama-stack
