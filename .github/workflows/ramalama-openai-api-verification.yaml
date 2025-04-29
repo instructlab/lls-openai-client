@@ -4,8 +4,8 @@ name: ramalama OpenAI API Verification
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "21 21 * * *"
+  # schedule:
+  #   - cron: "21 21 * * *"
 
 env:
   LC_ALL: en_US.UTF-8
@@ -100,11 +100,14 @@ jobs:
       - name: Run servers
         run: |
           source .venv/bin/activate
-          ramalama serve "${INFERENCE_MODEL}" > ramalama.log 2>&1 &
+
+          ramalama pull "${INFERENCE_MODEL}"
+          ramalama serve "${INFERENCE_MODEL}" 2>&1 | tee ramalama.log &
           # shellcheck disable=SC2016
           timeout 600 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:8080/v1/models/${INFERENCE_MODEL})" != "200" ]]; do sleep 5; done' || false
+
           cd ramalama-stack
-          uv run llama stack run --image-type venv --port 8321 run.yaml &
+          uv run llama stack run --image-type venv --port 8321 run.yaml 2>&1 | tee llama_stack.log &
           curl --retry-connrefused --retry 15 --retry-delay 5 http://localhost:8321/v1/openai/v1/models
         env:
           HOME: ${{ env.TMPDIR }}
@@ -141,6 +144,9 @@ jobs:
             - test_chat_streaming_image
             - test_chat_multi_turn_multiple_images
           EOF
+
+          tail -f ramalama.log &
+          tail -f ramalama-stack/llama_stack.log &
 
           python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=ramalama --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/ramalama.json" || echo "some ramalama verification tests failed"
 
