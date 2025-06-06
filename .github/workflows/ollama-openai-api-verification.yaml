@@ -90,6 +90,9 @@ jobs:
 
           uv run llama stack build --template ollama --image-type venv
 
+          # newer huggingface-hub so we work with latest transformers
+          python3.11 -m pip install "huggingface-hub>=0.30.0"
+
       - name: Run servers
         run: |
           source .venv/bin/activate
