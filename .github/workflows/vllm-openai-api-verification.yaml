@@ -116,7 +116,7 @@ jobs:
 
           export UV_PYTHON_PREFERENCE=only-system
           python3.11 -m pip install uv
-          uv sync --extra dev
+          uv sync --group dev
           source .venv/bin/activate
           python3.11 -m ensurepip
           uv pip install -e .
