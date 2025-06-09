@@ -80,18 +80,12 @@ jobs:
 
           export UV_PYTHON_PREFERENCE=only-system
           python3.11 -m pip install uv
-          uv sync --group dev
-          source .venv/bin/activate
-          python3.11 -m ensurepip
           uv pip install -e .
           uv pip install pytest-json-report
 
           curl -fsSL https://ollama.com/install.sh | sh
 
           uv run llama stack build --template ollama --image-type venv
-
-          # newer huggingface-hub so we work with latest transformers
-          uv pip install "huggingface-hub>=0.30.0"
 
       - name: Run servers
         run: |
@@ -101,7 +95,10 @@ jobs:
           ollama run "${INFERENCE_MODEL}" --keepalive 60m &
           # shellcheck disable=SC2016
           timeout 600 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:11434/v1/models/${INFERENCE_MODEL})" != "200" ]]; do sleep 5; done' || false
-          uv run llama stack run --image-type venv --port 8321 ollama &
+
+          # newer huggingface-hub so we work with latest transformers
+          uv run --with "huggingface-hub>=0.30.0" llama stack run --image-type venv --port 8321 ollama &
+
           curl --retry-connrefused --retry 15 --retry-delay 5 http://localhost:8321/v1/openai/v1/models
         env:
           HOME: ${{ env.TMPDIR }}
