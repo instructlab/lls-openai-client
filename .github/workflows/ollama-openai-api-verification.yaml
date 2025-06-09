@@ -80,8 +80,6 @@ jobs:
 
           export UV_PYTHON_PREFERENCE=only-system
           python3.11 -m pip install uv
-          uv pip install -e .
-          uv pip install pytest-json-report
 
           curl -fsSL https://ollama.com/install.sh | sh
 
@@ -89,7 +87,6 @@ jobs:
 
       - name: Run servers
         run: |
-          source .venv/bin/activate
           ollama serve &
           curl --retry-connrefused --retry 10 --retry-delay 5 "http://localhost:11434/v1/models"
           ollama run "${INFERENCE_MODEL}" --keepalive 60m &
@@ -106,7 +103,6 @@ jobs:
 
       - name: Run ollama verification tests
         run: |
-          source .venv/bin/activate
 
           cat <<-EOF > tests/verifications/conf/ollama.yaml
           base_url: http://localhost:11434/v1
@@ -136,9 +132,9 @@ jobs:
             - test_chat_multi_turn_multiple_images
           EOF
 
-          python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=ollama --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/ollama.json" || echo "some ollama verification tests failed"
+          uv run pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=ollama --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/ollama.json" || echo "some ollama verification tests failed"
 
-          python3.11 -m pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=ollama-llama-stack --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/ollama-llama-stack.json" || echo "some ollama-llama-stack verification tests failed"
+          uv run pytest -s -v tests/verifications/openai_api/test_chat_completion.py --provider=ollama-llama-stack --json-report --json-report-file="${VERIFICATION_RESULTS_DIR}/ollama-llama-stack.json" || echo "some ollama-llama-stack verification tests failed"
         env:
           OPENAI_API_KEY: fake
 
