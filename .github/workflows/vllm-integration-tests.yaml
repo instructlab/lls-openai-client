@@ -134,9 +134,9 @@ jobs:
             --enable-auto-tool-choice \
             --tool-call-parser pythonic \
             --chat-template tool_chat_template_llama4_pythonic.jinja \
-            --gpu-memory-utilization 0.99 \
+            --gpu-memory-utilization 0.97 \
             --enforce-eager \
-            --max-model-len 32000 \
+            --max-model-len 24000 \
             --tensor-parallel-size 4 2>&1 | tee vllm.log &
           curl --retry-connrefused --retry 50 --retry-delay 30 "${VLLM_URL}/models"
 
