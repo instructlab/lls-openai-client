@@ -108,8 +108,9 @@ jobs:
           python3.11 -m pip install uv
           uv sync --all-groups
           source .venv/bin/activate
-          uv pip install pytest-json-report
+          python3.11 -m ensurepip
           uv pip install -e .
+          uv pip install pytest-json-report
 
           # newer huggingface-hub and vllm directly via pip (vs uv)
           pip install "huggingface-hub>=0.30.0"
