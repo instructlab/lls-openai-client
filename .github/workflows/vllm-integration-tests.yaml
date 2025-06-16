@@ -1,0 +1,197 @@
+# spdx-license-identifier: Apache-2.0
+
+name: vLLM Integration Tests
+
+on:
+  workflow_dispatch:
+
+env:
+  LC_ALL: en_US.UTF-8
+  TMPDIR: /home/tmp
+  VLLM_INFERENCE_MODEL: RedHatAI/Llama-4-Scout-17B-16E-Instruct-FP8-dynamic
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  start-ec2-runner:
+    runs-on: ubuntu-latest
+    outputs:
+      label: ${{ steps.start-ec2-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+      ec2-instance-region: ${{ steps.start-ec2-runner.outputs.ec2-instance-region }}
+    steps:
+      - name: Checkout "launch-ec2-runner-with-fallback" in-house CI action
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: instructlab/ci-actions
+          # clone the "ci-actions" repo to a local directory called "ci-actions", instead of overwriting the current WORKDIR contents
+          path: ci-actions
+          ref: release-v0.2
+          sparse-checkout: |
+            actions/launch-ec2-runner-with-fallback
+
+      - name: Launch EC2 Runner with Fallback
+        id: start-ec2-runner
+        uses: ./ci-actions/actions/launch-ec2-runner-with-fallback
+        env:
+          TMPDIR: "/tmp"
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          github_token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          regions_config: >
+            [
+              {
+                "region": "us-east-2",
+                "subnets": {
+                  "us-east-2a": "${{ vars.SUBNET_US_EAST_2A }}",
+                  "us-east-2b": "${{ vars.SUBNET_US_EAST_2B }}",
+                  "us-east-2c": "${{ vars.SUBNET_US_EAST_2C }}"
+                },
+                "ec2-ami": "${{ vars.AWS_EC2_AMI_US_EAST_2 }}",
+                "security-group-id": "${{ vars.SECURITY_GROUP_ID_US_EAST_2 }}"
+              },
+              {
+                "region": "us-east-1",
+                "subnets": {
+                  "us-east-1a": "${{ vars.SUBNET_US_EAST_1A }}",
+                  "us-east-1b": "${{ vars.SUBNET_US_EAST_1B }}",
+                  "us-east-1c": "${{ vars.SUBNET_US_EAST_1C }}",
+                  "us-east-1d": "${{ vars.SUBNET_US_EAST_1D }}",
+                  "us-east-1e": "${{ vars.SUBNET_US_EAST_1E }}",
+                  "us-east-1f": "${{ vars.SUBNET_US_EAST_1F }}"
+                },
+                "ec2-ami": "${{ vars.AWS_EC2_AMI_US_EAST_1 }}",
+                "security-group-id": "${{ vars.SECURITY_GROUP_ID_US_EAST_1 }}"
+              }
+            ]
+          try_spot_instance_first: false
+          ec2_instance_type: g6e.12xlarge
+          aws_resource_tags: >
+            [
+              {"Key": "Name", "Value": "instructlab-ci-github-large-runner"},
+              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
+              {"Key": "GitHubRef", "Value": "${{ github.ref }}"}
+            ]
+
+  integration-tests:
+    needs:
+      - start-ec2-runner
+    runs-on: ${{ needs.start-ec2-runner.outputs.label }}
+
+    steps:
+      - name: Install Packages
+        run: |
+          cat /etc/os-release
+          mkdir -p "${TMPDIR}"
+          sudo dnf install -y gcc gcc-c++ make git python3.11 python3.11-devel python3.11-pip
+
+      - name: Checkout meta-llama/llama-stack
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: "meta-llama/llama-stack"
+          ref: "main"
+          # https://github.com/actions/checkout/issues/249
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          export PATH="/home/ec2-user/.local/bin:/usr/local/cuda/bin:$PATH"
+          nvidia-smi
+
+          export UV_PYTHON_PREFERENCE=only-system
+          python3.11 -m pip install uv
+          uv sync --all-groups
+          source .venv/bin/activate
+          uv pip install pytest-json-report
+          uv pip install -e .
+
+          # newer huggingface-hub and vllm directly via pip (vs uv)
+          uv pip install "huggingface-hub>=0.30.0"
+          uv pip install "vllm>=0.8.4"
+
+          uv run llama stack build --template remote-vllm --image-type venv
+
+      - name: Run servers
+        run: |
+          source .venv/bin/activate
+
+          # Download latest Llama 4 chat templates from vLLM
+          curl https://raw.githubusercontent.com/vllm-project/vllm/d5615af9aee97ef44f46de722d48852eb5d40802/examples/tool_chat_template_llama4_json.jinja -o tool_chat_template_llama4_json.jinja
+          curl https://raw.githubusercontent.com/vllm-project/vllm/refs/heads/main/examples/tool_chat_template_llama4_pythonic.jinja -o tool_chat_template_llama4_pythonic.jinja
+
+          # Start vLLM and wait for it to come up
+          # TODO: this needs llama4_json tool call parser once that gets into a vllm release
+          uv run vllm serve \
+            --model "${VLLM_INFERENCE_MODEL}" \
+            --port 8000 \
+            --enable-auto-tool-choice \
+            --tool-call-parser pythonic \
+            --chat-template tool_chat_template_llama4_pythonic.jinja \
+            --gpu-memory-utilization 0.99 \
+            --enforce-eager \
+            --max-model-len 32000 \
+            --tensor-parallel-size 4 2>&1 | tee vllm.log &
+          curl --retry-connrefused --retry 50 --retry-delay 30 "${VLLM_URL}/models"
+
+          # Start Llama Stack and wait for it to come up
+          uv run llama stack run --image-type venv --port 8321 remote-vllm 2>&1 | tee llama_stack.log &
+          curl --retry-connrefused --retry 5 --retry-delay 3 http://localhost:8321/v1/openai/v1/models
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          INFERENCE_MODEL: ${{ env.VLLM_INFERENCE_MODEL }}
+          TAVILY_SEARCH_API_KEY: ${{ secrets.TAVILY_SEARCH_API_KEY }}
+          VLLM_URL: "http://localhost:8000/v1"
+
+      - name: Run integration tests
+        run: |
+          source .venv/bin/activate
+
+          tail -f vllm.log &
+          tail -f llama_stack.log &
+
+          # OpenAI Responses API
+          LLAMA_STACK_CONFIG=http://localhost:8321 \
+          pytest -sv tests/integration/inference \
+            --text-model="${TEXT_MODEL}" \
+            --embedding-model="${EMBEDDING_MODEL}"
+        env:
+          TEXT_MODEL: ${{ env.VLLM_INFERENCE_MODEL }}
+          EMBEDDING_MODEL: all-MiniLM-L6-v2
+          OPENAI_API_KEY: fake
+
+  stop-ec2-runner:
+    needs:
+      - start-ec2-runner
+      - integration-tests
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df # v4.2.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ needs.start-ec2-runner.outputs.ec2-instance-region }}
+
+      - name: Stop EC2 runner
+        uses: machulav/ec2-github-runner@a8c20fc0876503410b2b966c124abc2311984ce2 # v2.3.9
+        with:
+          mode: stop
+          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          label: ${{ needs.start-ec2-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-ec2-runner.outputs.ec2-instance-id }}
+
+  workflow-complete:
+    # we don't want to block PRs on failed EC2 cleanup
+    # so not requiring "stop-ec2-runner" as well
+    needs: ["start-ec2-runner", "integration-tests"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Workflow Complete
+        run: echo "Workflow Complete"
