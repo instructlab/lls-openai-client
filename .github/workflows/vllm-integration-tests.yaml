@@ -112,8 +112,9 @@ jobs:
           uv pip install -e .
 
           # newer huggingface-hub and vllm directly via pip (vs uv)
-          uv pip install "huggingface-hub>=0.30.0"
-          uv pip install "vllm>=0.8.4"
+          uv add "huggingface-hub>=0.30.0"
+          uv add "vllm>=0.8.4"
+          uv sync --all-groups
 
           uv run llama stack build --template remote-vllm --image-type venv
 
