@@ -108,14 +108,13 @@ jobs:
           python3.11 -m pip install uv
           uv sync --all-groups
           source .venv/bin/activate
-          python3.11 -m ensurepip
           uv pip install -e .
           uv pip install pytest-json-report
 
           # newer huggingface-hub
           uv lock --upgrade-package huggingface-hub
           uv sync --all-groups
-          python3.11 -m pip install "vllm>=0.9.0"
+          uv pip install "vllm>=0.9.0"
 
           uv run llama stack build --template remote-vllm --image-type venv
 
