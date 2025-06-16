@@ -112,9 +112,8 @@ jobs:
           uv pip install -e .
 
           # newer huggingface-hub and vllm directly via pip (vs uv)
-          uv add "huggingface-hub>=0.30.0"
-          uv add "vllm>=0.8.4"
-          uv sync --all-groups
+          pip install "huggingface-hub>=0.30.0"
+          pip install "vllm>=0.9.0"
 
           uv run llama stack build --template remote-vllm --image-type venv
 
@@ -128,7 +127,7 @@ jobs:
 
           # Start vLLM and wait for it to come up
           # TODO: this needs llama4_json tool call parser once that gets into a vllm release
-          uv run vllm serve \
+          python3.11 -m vllm.entrypoints.openai.api_server \
             --model "${VLLM_INFERENCE_MODEL}" \
             --port 8000 \
             --enable-auto-tool-choice \
@@ -158,7 +157,7 @@ jobs:
 
           # OpenAI Responses API
           LLAMA_STACK_CONFIG=http://localhost:8321 \
-          pytest -sv tests/integration/inference \
+          python3.11 -m pytest -sv tests/integration/inference \
             --text-model="${TEXT_MODEL}" \
             --embedding-model="${EMBEDDING_MODEL}"
         env:
