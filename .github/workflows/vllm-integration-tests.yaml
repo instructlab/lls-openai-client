@@ -109,7 +109,7 @@ jobs:
           uv sync --all-groups
           source .venv/bin/activate
           uv pip install -e .
-          uv pip install pytest-json-report
+          uv pip install pytest-json-report pytest-json-ctrf
 
           # newer huggingface-hub
           uv lock --upgrade-package huggingface-hub
@@ -158,13 +158,33 @@ jobs:
 
           # OpenAI Responses API
           LLAMA_STACK_CONFIG=http://localhost:8321 \
-          python3.11 -m pytest -sv tests/integration/inference \
+          python3.11 -m pytest -sv \
+            --ctrf test_report.json \
+            tests/integration/inference \
             --text-model="${TEXT_MODEL}" \
             --embedding-model="${EMBEDDING_MODEL}"
         env:
           TEXT_MODEL: ${{ env.VLLM_INFERENCE_MODEL }}
           EMBEDDING_MODEL: all-MiniLM-L6-v2
           OPENAI_API_KEY: fake
+
+      - name: Publish test report
+        uses: ctrf-io/github-test-reporter@v1
+        if: ${{ always() }}
+        with:
+            report-path: 'test_report.json'
+            fail-rate-report: true
+            flaky-rate-report: true
+            previous-results-report: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: ctrf-report
+          path: test_report.json
 
   stop-ec2-runner:
     needs:
