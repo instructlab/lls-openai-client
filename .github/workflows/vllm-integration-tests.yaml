@@ -173,9 +173,19 @@ jobs:
         if: ${{ always() }}
         with:
             report-path: 'test_report.json'
+            summary-report: true
+            github-report: true
+            test-report: true
+            test-list-report: true
+            failed-report: true
             fail-rate-report: true
+            flaky-report: true
             flaky-rate-report: true
             previous-results-report: true
+            skipped-report: true
+            commit-report: true
+            insights-report: true
+            slowest-report: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
