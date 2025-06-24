@@ -89,7 +89,7 @@ jobs:
         run: |
           cat /etc/os-release
           mkdir -p "${TMPDIR}"
-          sudo dnf install -y gcc gcc-c++ make git python3.11 python3.11-devel python3.11-pip
+          sudo dnf install -y gcc gcc-c++ make git python3.12 python3.12-devel python3.12-pip
 
       - name: Checkout meta-llama/llama-stack
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -105,7 +105,7 @@ jobs:
           nvidia-smi
 
           export UV_PYTHON_PREFERENCE=only-system
-          python3.11 -m pip install uv
+          python3.12 -m pip install uv
           uv sync --all-groups
           source .venv/bin/activate
           uv pip install -e .
@@ -128,7 +128,7 @@ jobs:
 
           # Start vLLM and wait for it to come up
           # TODO: this needs llama4_json tool call parser once that gets into a vllm release
-          python3.11 -m vllm.entrypoints.openai.api_server \
+          python3.12 -m vllm.entrypoints.openai.api_server \
             --model "${VLLM_INFERENCE_MODEL}" \
             --port 8000 \
             --enable-auto-tool-choice \
@@ -158,7 +158,7 @@ jobs:
 
           # OpenAI Responses API
           LLAMA_STACK_CONFIG=http://localhost:8321 \
-          python3.11 -m pytest -sv \
+          python3.12 -m pytest -sv \
             --ctrf test_report.json \
             tests/integration/inference \
             --text-model="${TEXT_MODEL}" \
