@@ -109,12 +109,12 @@ jobs:
           uv sync --all-groups
           source .venv/bin/activate
           uv pip install -e .
-          uv pip install pytest-json-report pytest-json-ctrf
 
           # newer huggingface-hub
           uv lock --upgrade-package huggingface-hub
           uv sync --all-groups
           uv pip install "vllm>=0.9.0"
+          uv pip install pytest-json-report pytest-json-ctrf
 
           uv run llama stack build --template remote-vllm --image-type venv
 
